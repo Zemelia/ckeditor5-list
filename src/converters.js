@@ -602,13 +602,15 @@ export function modelChangePostFixer( model, writer ) {
 				// In case of renamed element.
 				const item = entry.position.nodeAfter;
 
-				if ( item.hasAttribute( 'indent' ) ) {
+				// Only remove 'indent' attribute from items that doesn't allow such attribute. #103
+				if ( item.hasAttribute( 'indent' ) && !model.schema.checkAttribute( item, 'indent' ) ) {
 					writer.removeAttribute( 'indent', item );
 
 					applied = true;
 				}
 
-				if ( item.hasAttribute( 'type' ) ) {
+				// Only remove 'type' attribute from items that doesn't allow such attribute. #103
+				if ( item.hasAttribute( 'type' ) && !model.schema.checkAttribute( item, 'type' ) ) {
 					writer.removeAttribute( 'type', item );
 
 					applied = true;

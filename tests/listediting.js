@@ -45,6 +45,13 @@ describe( 'ListEditing', () => {
 				view = editor.editing.view;
 				viewDoc = view.document;
 				viewRoot = viewDoc.getRoot();
+
+				model.schema.register( 'foo', {
+					allowWhere: '$block',
+					allowAttributes: [ 'indent', 'type' ],
+					isBlock: true,
+					isObject: true
+				} );
 			} );
 	} );
 
@@ -3276,6 +3283,22 @@ describe( 'ListEditing', () => {
 				model.change( writer => {
 					writer.rename( element, 'paragraph' );
 				} );
+
+				expect( getModelData( model, { withoutSelection: true } ) ).to.equal( expectedModel );
+			} );
+
+			it( 'should not remove attributes from elements that allows that attributes', () => {
+				const modelBefore =
+					'<listItem indent="0" type="bulleted">a</listItem>' +
+					'<listItem indent="1" type="bulleted">b</listItem>' +
+					'<foo indent="baz" type="bar"></foo>';
+
+				const expectedModel =
+					'<listItem indent="0" type="bulleted">a</listItem>' +
+					'<listItem indent="1" type="bulleted">b</listItem>' +
+					'<foo indent="baz" type="bar"></foo>';
+
+				setModelData( model, modelBefore );
 
 				expect( getModelData( model, { withoutSelection: true } ) ).to.equal( expectedModel );
 			} );
