@@ -598,6 +598,7 @@ export function modelChangePostFixer( model, writer ) {
 		if ( entry.type == 'insert' && entry.name == 'listItem' ) {
 			_addListToFix( entry.position );
 		} else if ( entry.type == 'insert' && entry.name != 'listItem' ) {
+			// This post-fixer should be removed after resolving ckeditor5-engine#1228.
 			if ( entry.name != '$text' ) {
 				// In case of renamed element.
 				const item = entry.position.nodeAfter;
