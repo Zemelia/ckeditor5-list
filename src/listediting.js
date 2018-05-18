@@ -9,6 +9,7 @@
 
 import ListCommand from './listcommand';
 import IndentCommand from './indentcommand';
+import ListStyleCommand from './liststylecommand';
 
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
@@ -18,6 +19,7 @@ import {
 	cleanListItem,
 	modelViewInsertion,
 	modelViewChangeType,
+  modelViewChangeListStyle,
 	modelViewMergeAfter,
 	modelViewRemove,
 	modelViewSplitOnInsert,
@@ -55,7 +57,7 @@ export default class ListEditing extends Plugin {
 		// If there are blocks allowed inside list item, algorithms using `getSelectedBlocks()` will have to be modified.
 		editor.model.schema.register( 'listItem', {
 			inheritAllFrom: '$block',
-			allowAttributes: [ 'type', 'indent' ]
+			allowAttributes: [ 'type', 'indent', 'listStyle', 'start' ]
 		} );
 
 		// Converters.
@@ -80,6 +82,8 @@ export default class ListEditing extends Plugin {
 		data.downcastDispatcher.on( 'attribute:type:listItem', modelViewChangeType );
 		editing.downcastDispatcher.on( 'attribute:indent:listItem', modelViewChangeIndent );
 		data.downcastDispatcher.on( 'attribute:indent:listItem', modelViewChangeIndent );
+    editing.downcastDispatcher.on( 'attribute:listStyle:listItem', modelViewChangeListStyle );
+    data.downcastDispatcher.on( 'attribute:listStyle:listItem', modelViewChangeListStyle );
 
 		editing.downcastDispatcher.on( 'remove:listItem', modelViewRemove );
 		editing.downcastDispatcher.on( 'remove', modelViewMergeAfter, { priority: 'low' } );
@@ -101,6 +105,10 @@ export default class ListEditing extends Plugin {
 		// Register commands for indenting.
 		editor.commands.add( 'indentList', new IndentCommand( editor, 'forward' ) );
 		editor.commands.add( 'outdentList', new IndentCommand( editor, 'backward' ) );
+
+		// Register commands for list styles.
+    editor.commands.add( 'numberedListStyle', new ListStyleCommand( editor, 'numbered' ) );
+    editor.commands.add( 'bulletedListStyle', new ListStyleCommand( editor, 'bulleted' ) );
 
 		const viewDocument = this.editor.editing.view.document;
 
