@@ -9,6 +9,7 @@
 
 import ListCommand from './listcommand';
 import IndentCommand from './indentcommand';
+import ListStyleCommand from './liststylecommand';
 
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
@@ -19,6 +20,7 @@ import {
 	modelViewInsertion,
 	modelViewChangeType,
 	modelViewMergeAfterChangeType,
+  modelViewChangeListStyle,
 	modelViewMergeAfter,
 	modelViewRemove,
 	modelViewSplitOnInsert,
@@ -64,7 +66,7 @@ export default class ListEditing extends Plugin {
 		// If there are blocks allowed inside list item, algorithms using `getSelectedBlocks()` will have to be modified.
 		editor.model.schema.register( 'listItem', {
 			inheritAllFrom: '$block',
-			allowAttributes: [ 'listType', 'listIndent' ]
+			allowAttributes: [ 'listType', 'listIndent', 'listStyle', 'start' ]
 		} );
 
 		// Converters.
@@ -87,7 +89,9 @@ export default class ListEditing extends Plugin {
 
 		editing.downcastDispatcher.on( 'attribute:listType:listItem', modelViewChangeType, { priority: 'high' } );
 		editing.downcastDispatcher.on( 'attribute:listType:listItem', modelViewMergeAfterChangeType, { priority: 'low' } );
-		editing.downcastDispatcher.on( 'attribute:listIndent:listItem', modelViewChangeIndent( editor.model ) );
+    editing.downcastDispatcher.on( 'attribute:listIndent:listItem', modelViewChangeIndent( editor.model ) );
+    editing.downcastDispatcher.on( 'attribute:listStyle:listItem', modelViewChangeListStyle );
+    data.downcastDispatcher.on( 'attribute:listStyle:listItem', modelViewChangeListStyle);
 
 		editing.downcastDispatcher.on( 'remove:listItem', modelViewRemove( editor.model ) );
 		editing.downcastDispatcher.on( 'remove', modelViewMergeAfter, { priority: 'low' } );
@@ -106,7 +110,11 @@ export default class ListEditing extends Plugin {
 
 		// Register commands for indenting.
 		editor.commands.add( 'indentList', new IndentCommand( editor, 'forward' ) );
-		editor.commands.add( 'outdentList', new IndentCommand( editor, 'backward' ) );
+    editor.commands.add( 'outdentList', new IndentCommand( editor, 'backward' ) );
+
+    // Register commands for list styles.
+    editor.commands.add( 'numberedListStyle', new ListStyleCommand( editor, 'numbered' ) );
+    editor.commands.add( 'bulletedListStyle', new ListStyleCommand( editor, 'bulleted' ) );
 
 		const viewDocument = editing.view.document;
 

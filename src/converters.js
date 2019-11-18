@@ -2,7 +2,6 @@
  * @license Copyright (c) 2003-2019, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or https://ckeditor.com/legal/ckeditor-oss-license
  */
-
 /**
  * @module list/converters
  */
@@ -194,6 +193,58 @@ export function modelViewChangeIndent( model ) {
 	};
 }
 
+
+/**
+ * A model-to-view converter for `listStyle` attribute change on `listItem` model element.
+ *
+ * This change means that `<li>` elements parent `<ul>` or `<ol>` changes style attribute and related.
+ *
+ * @see module:engine/conversion/downcastdispatcher~DowncastDispatcher#event:attribute
+ * @param {module:utils/eventinfo~EventInfo} evt An object containing information about the fired event.
+ * @param {Object} data Additional information about the change.
+ * @param {Object} conversionApi Conversion interface.
+ */
+export function modelViewChangeListStyle( evt, data, conversionApi ) {
+  const listStyleValue = data.attributeNewValue;
+  if ( !conversionApi.consumable.consume( data.item, 'attribute:listStyle' ) || !listStyleValue ) {
+    return;
+  }
+
+  const viewItem = conversionApi.mapper.toViewElement( data.item );
+  const viewWriter = conversionApi.writer;
+  const childs = viewItem.parent.getChildren();
+  let changeParent = false;
+
+
+  // 1. Change all list items attributes in current <ul> or <ol> scope.
+  for ( const child of childs ) {
+    const modelItem = conversionApi.mapper.toModelElement( child );
+    const currentStyle = modelItem.getAttribute( 'listStyle' );
+    if ( currentStyle !== listStyleValue ) {
+      viewWriter.setAttribute( 'listStyle', listStyleValue, modelItem );
+      changeParent = true;
+    }
+  }
+
+  // 2. Change <ul> or <ol> style.
+  if ( changeParent ) {
+   if ( listStyleValue === 'not-set' ) {
+      viewWriter.removeStyle( 'list-style-type', viewItem.parent );
+    }
+    else {
+     viewWriter.setStyle( {
+       'list-style-type': listStyleValue
+     }, viewItem.parent );
+   }
+  }
+
+  // 3. Consume insertion of children inside the item. They are already handled by re-building the item in view.
+  for ( const child of childs ) {
+    conversionApi.consumable.consume( child, 'insert' );
+  }
+
+}
+
 /**
  * A special model-to-view converter introduced by the {@link module:list/list~List list feature}. This converter is fired for
  * insert change of every model item, and should be fired before the actual converter. The converter checks whether the inserted
@@ -377,6 +428,16 @@ export function viewModelConverter( evt, data, conversionApi ) {
 		// Set 'bulleted' as default. If this item is pasted into a context,
 		const type = data.viewItem.parent && data.viewItem.parent.name == 'ol' ? 'numbered' : 'bulleted';
 		writer.setAttribute( 'listType', type, listItem );
+
+		// Set list item style if such exists.
+    const styleType = data.viewItem.parent._styles.get( 'list-style-type' ) || '';
+    writer.setAttribute( 'listStyle', styleType, listItem );
+
+    // Set start attribute if exists.
+    const start = data.viewItem.parent._attrs.get( 'start' ) || '';
+    if ( start && type === 'numbered' ) {
+      writer.setAttribute( 'start', start, listItem );
+		}
 
 		// Try to find allowed parent for list item.
 		const splitResult = conversionApi.splitToAllowedParent( listItem, data.modelCursor );
